@@ -1,0 +1,43 @@
+name: autoupgrade-apple-silicon
+services:
+  prestashop:
+    image: prestashop/prestashop-flashlight:${PS_TAG}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - DB_SERVER=mysql
+      - DB_PASSWD=root
+      - DB_NAME=psreference
+      - PS_DOMAIN=localhost:8001
+      - PS_INSTALL_AUTO=1
+      - PS_ERASE_DB=1
+      - PS_INSTALL_DB=1
+      - PS_FOLDER_ADMIN=admin-dev
+      - PS_FOLDER_INSTALL=install-dev
+      - PS_DEV_MODE=1
+      - PS_LANGUAGE=fr
+      - ADMIN_MAIL=admin@prestashop.com
+      - ADMIN_PASSWD=prestashop
+    ports:
+      - 8001:80
+    volumes:
+      - ./init-scripts:/tmp/init-scripts:ro
+      - type: bind
+        source: ../../autoupgrade # local path to the module
+        target: /var/www/html/modules/autoupgrade # path to be mounted in the container
+
+  mysql:
+    image: mariadb:lts
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=prestashop
+      - MYSQL_PASSWORD=prestashop
+      - MYSQL_ROOT_PASSWORD=prestashop
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=prestashop
